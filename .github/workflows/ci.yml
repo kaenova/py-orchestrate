@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.12', '3.13']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+    
+    - name: Run basic import test
+      run: |
+        uv run python -c "import py_orchestrate; print('✅ Import successful')"
+    
+    - name: Run example workflow
+      run: |
+        uv run python py_orchestrate/example.py
+        
+    - name: Run type checking
+      run: |
+        uv run mypy py_orchestrate --ignore-missing-imports
+    
+    - name: Run code formatting check
+      run: |
+        uv run black --check py_orchestrate
+    
+    - name: Test package build
+      run: |
+        uv run python -m build
+        uv run twine check dist/*
+    
+    - name: Upload test artifacts
+      uses: actions/upload-artifact@v3
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+      with:
+        name: dist-files
+        path: dist/

@@ -1,0 +1,91 @@
+name: Build and Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+      - "[0-9]+.[0-9]+.[0-9]+-*"
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Extract version from tag
+      id: get_version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Extracted version: $VERSION"
+    
+    - name: Update version in pyproject.toml
+      run: |
+        sed -i 's/version = ".*"/version = "${{ steps.get_version.outputs.VERSION }}"/' pyproject.toml
+        echo "Updated pyproject.toml version to ${{ steps.get_version.outputs.VERSION }}"
+        grep 'version = ' pyproject.toml
+    
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+    
+    - name: Run tests (if any)
+      run: |
+        # Add test commands here when tests are available
+        # uv run pytest
+        echo "No tests defined yet"
+    
+    - name: Build package
+      run: |
+        uv run python -m build
+        
+    - name: Check package
+      run: |
+        uv run twine check dist/*
+    
+    - name: List built files
+      run: |
+        echo "Built files:"
+        ls -la dist/
+    
+    - name: Publish to Test PyPI (for pre-release tags)
+      if: contains(steps.get_version.outputs.VERSION, '-')
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
+      run: |
+        uv run twine upload --repository testpypi dist/*
+        echo "📦 Published to Test PyPI: https://test.pypi.org/project/py-orchestrate/${{ steps.get_version.outputs.VERSION }}/"
+    
+    - name: Publish to PyPI (for release tags)
+      if: "!contains(steps.get_version.outputs.VERSION, '-')"
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        uv run twine upload dist/*
+        echo "🚀 Published to PyPI: https://pypi.org/project/py-orchestrate/${{ steps.get_version.outputs.VERSION }}/"
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/*.whl
+          dist/*.tar.gz
+        generate_release_notes: true
+        draft: false
+        prerelease: ${{ contains(steps.get_version.outputs.VERSION, '-') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

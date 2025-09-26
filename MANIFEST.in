@@ -1,0 +1,10 @@
+include README.md
+include LICENSE
+include pyproject.toml
+recursive-include py_orchestrate *.py
+global-exclude *.pyc
+global-exclude __pycache__
+global-exclude .DS_Store
+exclude main.py
+exclude test_*.py
+exclude *.db

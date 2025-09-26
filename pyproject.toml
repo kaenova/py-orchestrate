@@ -1,0 +1,76 @@
+[project]
+name = "py-orchestrate"
+version = "0.1.0"
+description = "A Python workflow orchestrator with embedded SQLite database, similar to Durable Functions"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "py-orchestrate contributors" }
+]
+maintainers = [
+    { name = "py-orchestrate contributors" }
+]
+keywords = [
+    "workflow",
+    "orchestrator", 
+    "durable-functions",
+    "sqlite",
+    "workflow-engine",
+    "task-orchestration",
+    "fault-tolerance",
+    "persistence"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Distributed Computing",
+    "Topic :: Database",
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/mymac/py-orchestrate"
+Documentation = "https://github.com/mymac/py-orchestrate#readme"
+Repository = "https://github.com/mymac/py-orchestrate.git"
+Issues = "https://github.com/mymac/py-orchestrate/issues"
+Changelog = "https://github.com/mymac/py-orchestrate/releases"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=22.0.0",
+    "mypy>=1.0.0",
+    "build>=0.10.0",
+    "twine>=4.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatchling.build.targets.wheel]
+packages = ["py_orchestrate"]
+
+[tool.hatchling.build.targets.sdist]
+include = [
+    "/py_orchestrate",
+    "/README.md",
+    "/LICENSE",
+    "/pyproject.toml"
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "black>=22.0.0",
+    "mypy>=1.0.0",
+    "build>=0.10.0",
+    "twine>=4.0.0",
+]
