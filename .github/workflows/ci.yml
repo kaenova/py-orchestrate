@@ -34,7 +34,7 @@ jobs:
     
     - name: Run basic import test
       run: |
-        uv run python -c "import py_orchestrate; print('✅ Import successful')"
+        uv run python -c "import py_orchestrate; print('[OK] Import successful')"
     
     - name: Run example workflow
       run: |

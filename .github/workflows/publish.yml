@@ -67,7 +67,7 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
       run: |
         uv run twine upload --repository testpypi dist/*
-        echo "📦 Published to Test PyPI: https://test.pypi.org/project/py-orchestrate/${{ steps.get_version.outputs.VERSION }}/"
+        echo "[PUBLISH] Published to Test PyPI: https://test.pypi.org/project/py-orchestrate/${{ steps.get_version.outputs.VERSION }}/"
     
     - name: Publish to PyPI (for release tags)
       if: "!contains(steps.get_version.outputs.VERSION, '-')"
@@ -76,7 +76,7 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: |
         uv run twine upload dist/*
-        echo "🚀 Published to PyPI: https://pypi.org/project/py-orchestrate/${{ steps.get_version.outputs.VERSION }}/"
+        echo "[SUCCESS] Published to PyPI: https://pypi.org/project/py-orchestrate/${{ steps.get_version.outputs.VERSION }}/"
     
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
