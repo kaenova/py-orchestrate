@@ -77,15 +77,3 @@ jobs:
       run: |
         uv run twine upload dist/*
         echo "[SUCCESS] Published to PyPI: https://pypi.org/project/py-orchestrate/${{ steps.get_version.outputs.VERSION }}/"
-    
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          dist/*.whl
-          dist/*.tar.gz
-        generate_release_notes: true
-        draft: false
-        prerelease: ${{ contains(steps.get_version.outputs.VERSION, '-') }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
