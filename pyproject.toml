@@ -50,6 +50,9 @@ dev = [
     "build>=0.10.0",
     "twine>=4.0.0",
 ]
+cosmos = [
+    "azure-cosmos>=4.5.1",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -74,3 +77,6 @@ dev = [
     "build>=0.10.0",
     "twine>=4.0.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

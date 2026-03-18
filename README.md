@@ -4,16 +4,17 @@
 [![Python](https://img.shields.io/pypi/pyversions/py-orchestrate.svg)](https://pypi.org/project/py-orchestrate/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A Python workflow orchestrator like any durable orchestrator, but run **locally** with **embedded** SQLite database.
+A Python workflow orchestrator with durable recovery and pluggable persistence backends.
 
 ## Features
 
 - **Workflow Orchestration**: Define workflows that orchestrate multiple activities
-- **Persistent State**: All workflow and activity state is persisted in SQLite database
+- **Persistent State**: Persist workflow and activity state in SQLite or custom backends
 - **Fault Tolerance**: Workflows can be resumed after application restart
 - **Activity Tracking**: Track current activity execution and progress
 - **Background Execution**: Workflows run asynchronously in background threads
 - **Simple API**: Easy-to-use decorators for defining workflows and activities
+- **Extensible Storage**: Built-in SQLite manager and optional Azure Cosmos DB manager
 
 ## Installation
 
@@ -22,6 +23,9 @@ A Python workflow orchestrator like any durable orchestrator, but run **locally*
 ```bash
 # Install using pip
 pip install py-orchestrate
+
+# Optional Cosmos DB support
+pip install py-orchestrate[cosmos]
 
 # Or using uv
 uv add py-orchestrate
@@ -109,6 +113,24 @@ finally:
     orchestrator.stop()
 ```
 
+### 4. Use a Different Database Manager
+
+```python
+from azure.identity import DefaultAzureCredential
+from py_orchestrate import CosmosDatabaseManager, Orchestrator
+
+db_manager = CosmosDatabaseManager(
+    endpoint="https://<account>.documents.azure.com:443/",
+    credential=DefaultAzureCredential(),
+    database_id="py-orchestrate",
+    workflow_container_id="workflows",
+    activity_container_id="activity-executions",
+)
+
+orchestrator = Orchestrator(db_manager=db_manager)
+orchestrator.start()
+```
+
 ## Core Concepts
 
 ### Workflows
@@ -125,9 +147,14 @@ finally:
 
 ### Orchestrator Engine
 - Manages workflow and activity execution
-- Persists state in SQLite database
+- Persists state through a database manager interface
 - Provides APIs to invoke workflows and query status
 - Handles fault tolerance and recovery
+
+### Database Managers
+- `SQLiteDatabaseManager`: default file-based persistence
+- `CosmosDatabaseManager`: Azure Cosmos DB backend with automatic database/container creation
+- `BaseDatabaseManager`: interface for custom persistence implementations
 
 ## Activity Signature Changes & Best Practices
 
@@ -388,12 +415,13 @@ Marks a function as an activity.
 
 ### Orchestrator Class
 
-#### `Orchestrator(db_path="py_orchestrate.db", max_workers=5)`
+#### `Orchestrator(db_path="py_orchestrate.db", max_workers=5, db_manager=None)`
 Creates a new orchestrator instance.
 
 **Parameters:**
-- `db_path` (str): Path to SQLite database file
+- `db_path` (str): Path to SQLite database file used when `db_manager` is not provided
 - `max_workers` (int): Maximum number of concurrent workflow threads
+- `db_manager` (BaseDatabaseManager, optional): Inject a custom database manager implementation
 
 #### Methods
 
@@ -430,10 +458,15 @@ Lists workflows, optionally filtered by name.
 
 ## Database Schema
 
-The library creates two tables in SQLite:
+The built-in persistence layer stores two logical collections of data:
 
-- `workflows`: Stores workflow instances and their state
-- `activity_executions`: Stores individual activity executions
+- `workflows`: Workflow instances and their current state
+- `activity_executions`: Individual activity runs for each workflow
+
+SQLite stores these as tables. Cosmos DB stores them in two containers, which should use separate container IDs for better partitioning:
+
+- `workflow_container_id`
+- `activity_container_id`
 
 ## Examples
 
@@ -530,6 +563,7 @@ print(result)  # Should work before putting in workflow
 
 - Python 3.12+
 - SQLite (included with Python)
+- `azure-cosmos` only when using `CosmosDatabaseManager`
 
 ## Development
 
@@ -545,6 +579,9 @@ uv sync --dev
 
 # Run the example
 uv run python py_orchestrate/example.py
+
+# Run automated tests
+uv run pytest tests
 
 # Run type checking
 uv run mypy py_orchestrate --ignore-missing-imports

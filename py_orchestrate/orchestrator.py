@@ -6,13 +6,13 @@ import uuid
 import threading
 import time
 import traceback
-import sqlite3
 from datetime import datetime
 from typing import Any, Dict, Optional, List
 from concurrent.futures import ThreadPoolExecutor, Future
 import inspect
 
-from .models import DatabaseManager, WorkflowInstance, ActivityExecution, WorkflowStatus
+from .db_manager import BaseDatabaseManager, SQLiteDatabaseManager
+from .models import WorkflowInstance, ActivityExecution, WorkflowStatus
 from .decorators import get_registry
 
 
@@ -29,8 +29,13 @@ class ActivityContext:
 class Orchestrator:
     """Main orchestrator engine for managing workflows and activities."""
 
-    def __init__(self, db_path: str = "py_orchestrate.db", max_workers: int = 5):
-        self.db = DatabaseManager(db_path)
+    def __init__(
+        self,
+        db_path: str = "py_orchestrate.db",
+        max_workers: int = 5,
+        db_manager: Optional[BaseDatabaseManager] = None,
+    ):
+        self.db = db_manager or SQLiteDatabaseManager(db_path)
         self.registry = get_registry()
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.running_workflows: Dict[str, Future] = {}
@@ -144,9 +149,7 @@ class Orchestrator:
         if name:
             workflows = self.db.get_workflows_by_name(name)
         else:
-            # For now, we'll implement a simple query for all workflows
-            # In a real implementation, you might want pagination
-            workflows = []
+            workflows = self.db.list_workflows()
 
         return [
             {
@@ -412,18 +415,11 @@ class Orchestrator:
 
     def _recover_interrupted_workflows(self) -> None:
         """Find and resume interrupted workflows."""
-        # Get all processing workflows from database
-        with sqlite3.connect(self.db.db_path) as conn:
-            cursor = conn.execute(
-                """
-                SELECT id, name FROM workflows 
-                WHERE status = 'processing'
-            """
-            )
+        processing_workflows = self.db.get_processing_workflows()
 
-            processing_workflows = cursor.fetchall()
-
-        for workflow_id, workflow_name in processing_workflows:
+        for workflow in processing_workflows:
+            workflow_id = workflow.id
+            workflow_name = workflow.name
             # Check if this workflow is already running
             if workflow_id in self.running_workflows:
                 continue
